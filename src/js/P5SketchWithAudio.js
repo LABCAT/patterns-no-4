@@ -70,6 +70,7 @@ const P5SketchWithAudio = () => {
             p.colorMode(p.HSB);
             p.angleMode(p.DEGREES);
             p.rectMode(p.CENTER);
+            p.fillHue = p.random(0, 360);
             p.size = p.height / 8 * 5;
         }
 
