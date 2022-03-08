@@ -28,9 +28,10 @@ const P5SketchWithAudio = () => {
         p.loadMidi = () => {
             Midi.fromUrl(midi).then(
                 function(result) {
-                    console.log(result);
                     const noteSet1 = result.tracks[8].notes; // Thor 2 - Colorbox Bass
+                    const noteSet2 = result.tracks[1].notes; // Maelstrom 1 - [Dave] - [Mono]
                     p.scheduleCueSet(noteSet1, 'executeCueSet1');
+                    p.scheduleCueSet(noteSet2, 'executeCueSet2');
                     p.audioLoaded = true;
                     document.getElementById("loader").classList.add("loading--complete");
                     document.getElementById("play-icon").classList.remove("fade-out");
@@ -59,10 +60,14 @@ const P5SketchWithAudio = () => {
             }
         } 
 
+        p.originalSize = 0;
         p.size = 0;
         p.fillHue = 0;
         p.shapeCount = 0;
         p.shapes = [];
+        p.shapeTypes = ['ellipse', 'rect', 'centeredTriangle', 'pentagon', 'hexagon']; 
+        p.callShape = 'rect';
+        p.callAngle = 120;
 
         p.setup = () => {
             p.canvas = p.createCanvas(p.canvasWidth, p.canvasHeight);
@@ -71,7 +76,8 @@ const P5SketchWithAudio = () => {
             p.angleMode(p.DEGREES);
             p.rectMode(p.CENTER);
             p.fillHue = p.random(0, 360);
-            p.size = p.height / 8 * 5;
+            p.originalSize = p.height / 8 * 5;
+            p.size = p.originalSize;
         }
 
         p.draw = () => {
@@ -79,28 +85,140 @@ const P5SketchWithAudio = () => {
             if(p.audioLoaded && p.song.isPlaying()){
                 for (let i = 0; i < p.shapes.length; i++) {
                     const shape = p.shapes[i],
-                        { width, height, hue, angle } = shape;
+                        { width, height, angle, shapeType, hue, strokeSat, strokeWeight } = shape;
                     p.fill(hue, 100, 100, 0.25);
-                    p.rect(0, 0, width, height);
+                    p.stroke(hue, strokeSat, 100, 1);
+                    p.strokeWeight(strokeWeight);
+                    p[shapeType](0, 0, width, height);
                     p.rotate(angle);
                 }
             }
         }
 
         p.executeCueSet1 = (note) => {
-            p.shapes.push(
-                {
-                    width: p.size,
-                    height:p.size,
-                    hue: p.fillHue,
-                    angle: 120,
+            const { currentCue } = note;
+
+            if(
+                currentCue <= 48 || 
+                (currentCue > 96 && currentCue <= 144) ||    
+                (currentCue > 192 && currentCue <= 240)
+            ) {
+                if(currentCue === 97 || currentCue === 193) {
+                    p.background(0);
+                    p.shapes = [];
+                    p.shapeCount = 0;
+                    p.size = p.originalSize;
+                    p.fillHue = p.random(0, 360);
+                    p.callShape = currentCue === 97 ? 'centeredTriangle' : 'pentagon';
+                    //p.callAngle = p.random([13, 21, 34, 55, 89, 144]);
                 }
-            );
-            p.fillHue = p.fillHue + 15 > 360 ? p.fillHue + 15 - 360 : p.fillHue + 15;
-            p.shapeCount++;
-            if(p.shapeCount % 3 === 0){
-                p.size = p.size / 10 * 9;
+                p.shapes.push(
+                    {
+                        width: p.size * 2,
+                        height:p.size,
+                        hue: p.fillHue,
+                        angle: p.callAngle,
+                        shapeType: p.callShape,
+                        strokeSat: 100,
+                        strokeWeight: 4,
+                    }
+                );
+                p.fillHue = p.fillHue + 15 > 360 ? p.fillHue + 15 - 360 : p.fillHue + 15;
+                p.shapeCount++;
+                if(p.shapeCount % 3 === 0){
+                    p.size = p.size / 10 * 9;
+                }
             }
+        }
+
+        p.executeCueSet2 = (note) => {
+            const { currentCue } = note;
+            p.background(0);
+            p.shapes = [];
+            p.shapeCount = 0;
+            p.size = p.originalSize;
+            p.fillHue = p.random(0, 360);
+            if(currentCue % 2 || 1 == 1) {
+                const shape = p.random(p.shapeTypes),
+                    sizeMultiplier = p.random([1, 2, 3, 5, 8, 13]),
+                    angle = p.random([13, 21, 34, 55, 89, 144]);
+                while(p.size > p.height / 32) {
+                    p.shapes.push(
+                        {
+                            width: p.size,
+                            height:p.size * sizeMultiplier,
+                            angle: angle,
+                            shapeType: shape,
+                            hue: p.fillHue,
+                            strokeSat: 0,
+                            strokeWeight: 2,
+                        }
+                    );
+                    p.fillHue = p.fillHue + 15 > 360 ? p.fillHue + 15 - 360 : p.fillHue + 15;
+                    p.shapeCount++;
+                    if(p.shapeCount % 3 === 0){
+                        p.size = p.size / 10 * 9;
+                    }
+                }
+            }
+        }
+
+        p.centeredTriangle = (x, y, width, height) => {
+            const x1 = x,   
+                y1 = y - (height/2), 
+                x2 = x - (width/2),
+                y2 = y + (height/2),
+                x3 = x + (width/2),
+                y3 = y + (height/2);
+            p.triangle(x1, y1, x2, y2, x3, y3);
+        }
+
+        /**
+         * function to draw a pentagon shape
+         * @param {Number} x        - x-coordinate (center) of the pentagon
+         * @param {Number} y        - y-coordinate (center) of the pentagon
+         * @param {Number} width    - width of the pentagon
+         * @param {Number} height   - height of the pentagon
+         */
+        p.pentagon = (x, y, width, height) => {
+            height = height / 2;
+            p.angleMode(p.RADIANS);
+            const angle = p.TWO_PI / 5;
+            let count = 0;
+            p.beginShape();
+            for (var a = p.TWO_PI / 20; a < p.TWO_PI + p.TWO_PI / 10; a += angle) {
+                let sxMultiplier = count !== 1 ? width / 2 : height; 
+                let sx = x + p.cos(a) * sxMultiplier;
+                let sy = y + p.sin(a) * height;
+                p.vertex(sx, sy);
+                count++;
+            }
+            p.endShape(p.CLOSE);
+            p.angleMode(p.DEGREES);
+        }
+
+        /**
+         * function to draw a hexagon shape
+         * @param {Number} x        - x-coordinate (center) of the hexagon
+         * @param {Number} y        - y-coordinate (center) of the hexagon
+         * @param {Number} width    - width of the hexagon
+         * @param {Number} height   - height of the hexagon
+         */
+        p.hexagon = (x, y, width, height) => {
+            height = height / 2;
+            p.angleMode(p.RADIANS);
+            const angle = p.TWO_PI / 6;
+            let count = 0;
+            p.beginShape();
+            for (var a = p.TWO_PI / 12; a < p.TWO_PI + p.TWO_PI / 12; a += angle) {
+                let sxMultiplier = count % 3 !== 1 ? width / 2 : height; 
+                let sx = x + p.cos(a) * sxMultiplier;
+                let sy = y + p.sin(a) * height;
+                p.vertex(sx, sy);
+                count++;
+            }
+            p.endShape(p.CLOSE);
+            p.angleMode(p.DEGREES);
         }
 
         p.mousePressed = () => {
