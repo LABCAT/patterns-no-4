@@ -67,7 +67,7 @@ const P5SketchWithAudio = () => {
         p.shapes = [];
         p.shapeTypes = ['ellipse', 'rect', 'centeredTriangle', 'pentagon', 'hexagon']; 
         p.callShape = 'rect';
-        p.callAngle = 120;
+        p.callSizeMultiplier = 1;
 
         p.setup = () => {
             p.canvas = p.createCanvas(p.canvasWidth, p.canvasHeight);
@@ -97,27 +97,27 @@ const P5SketchWithAudio = () => {
 
         p.executeCueSet1 = (note) => {
             const { currentCue } = note;
-
             if(
                 currentCue <= 48 || 
-                (currentCue > 96 && currentCue <= 144) ||    
-                (currentCue > 192 && currentCue <= 240)
+                (currentCue > 95 && currentCue <= 143) ||    
+                (currentCue > 190 && currentCue <= 238)
             ) {
-                if(currentCue === 97 || currentCue === 193) {
+                if(currentCue === 96 || currentCue === 191) {
                     p.background(0);
                     p.shapes = [];
                     p.shapeCount = 0;
                     p.size = p.originalSize;
                     p.fillHue = p.random(0, 360);
-                    p.callShape = currentCue === 97 ? 'centeredTriangle' : 'pentagon';
-                    //p.callAngle = p.random([13, 21, 34, 55, 89, 144]);
+                    p.callShape = currentCue === 96 ? 'centeredTriangle' : 'pentagon';
+                    p.callSizeMultiplier = p.random(1.5, 3);
                 }
+                
                 p.shapes.push(
                     {
-                        width: p.size * 2,
+                        width: p.size * p.callSizeMultiplier,
                         height:p.size,
                         hue: p.fillHue,
-                        angle: p.callAngle,
+                        angle: 120,
                         shapeType: p.callShape,
                         strokeSat: 100,
                         strokeWeight: 4,
